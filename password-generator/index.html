@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FortifyPass — Password, Passphrase & Pin Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg: #0b1220;
+      --glass: rgba(255,255,255,0.08);
+      --glass-2: rgba(255,255,255,0.12);
+      --text: #e7eefc;
+      --muted: #9fb0d0;
+      --brand: #7c9cff;
+      --brand-2: #64d1ff;
+      --success: #2ecc71;
+      --warn: #f39c12;
+      --danger: #e74c3c;
+      --outline: rgba(255,255,255,0.18);
+      --shadow: 0 20px 60px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+      --radius: 18px;
+    }
+    *{box-sizing: border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(1200px 1200px at 10% 10%, #13213f 0%, transparent 60%),
+                  radial-gradient(1200px 1200px at 90% 20%, #0f2a55 0%, transparent 60%),
+                  linear-gradient(135deg, #0b1220, #0c162a 60%, #0b1220);
+      display:grid; place-items:center; padding:32px;
+    }
+    .container{ width:min(980px, 96vw); }
+    header{ text-align:center; margin-bottom:24px; }
+    h1{ margin:0 0 6px; font-size: clamp(28px, 4.5vw, 44px); letter-spacing:0.2px; }
+    .subtitle{ color:var(--muted); font-weight:500 }
+
+    .card{ background: var(--glass); backdrop-filter: blur(14px); border:1px solid var(--outline);
+           border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px; }
+
+    .grid{ display:grid; gap:18px; }
+    @media (min-width: 900px){ .grid-2{ grid-template-columns: 1.1fr .9fr; } }
+
+    .section-title{ font-weight:700; letter-spacing: .3px; margin: 8px 0 6px }
+    .muted{ color: var(--muted); }
+
+    .row{ display:flex; gap:12px; align-items:center; flex-wrap:wrap }
+    .grow{ flex:1 }
+
+    .output{ position:relative; background:var(--glass-2); border:1px solid var(--outline);
+             border-radius: 14px; padding: 16px 56px 16px 16px; font-size:18px; word-break: break-all; min-height:52px; display:flex; align-items:center }
+    .btn{
+      appearance:none; border:none; cursor:pointer; color:#0b1220; font-weight:700; letter-spacing:.2px;
+      background: linear-gradient(180deg, var(--brand), var(--brand-2));
+      padding: 12px 16px; border-radius: 12px; box-shadow: 0 8px 24px rgba(124,156,255,.35);
+      transition: transform .06s ease;
+    }
+    .btn:hover{ transform: translateY(-1px) }
+    .btn.secondary{ background: linear-gradient(180deg, #dbe6ff, #b7c8ff); color:#0b1220; box-shadow:0 8px 24px rgba(183,200,255,.25) }
+    .btn.ghost{ background: transparent; color: var(--text); border:1px solid var(--outline); box-shadow:none }
+    .btn.flat{ background: var(--glass-2); color: var(--text); box-shadow:none; border:1px solid var(--outline) }
+
+    .icon-btn{ position:absolute; right:8px; top:8px; display:flex; gap:8px }
+    .chip{ padding:6px 10px; border-radius:999px; border:1px solid var(--outline); background: rgba(255,255,255,.06); font-size:12px; color:var(--muted) }
+
+    .switch{ position:relative; display:inline-flex; align-items:center; gap:10px; cursor:pointer; user-select:none; }
+    .switch input{ display:none }
+    .track{ width:46px; height:26px; background:rgba(255,255,255,.12); border-radius:999px; position:relative; border:1px solid var(--outline); transition:.2s ease }
+    .thumb{ width:22px; height:22px; background:white; border-radius:50%; position:absolute; top:1px; left:1px; transition:.2s ease; box-shadow: 0 2px 10px rgba(0,0,0,.25) }
+    .switch input:checked + .track{ background: linear-gradient(90deg, var(--brand), var(--brand-2)); }
+    .switch input:checked + .track .thumb{ left:23px }
+
+    .field{ display:flex; align-items:center; gap:10px; }
+    .label{ min-width:160px; color:var(--muted); font-weight:600 }
+    .num{ width:86px; padding:10px 12px; border-radius:12px; border:1px solid var(--outline); background: rgba(255,255,255,.06); color:var(--text); font-weight:700; text-align:center }
+    .range{ width:100% }
+
+    .strength{ height:12px; border-radius:999px; background:rgba(255,255,255,.10); overflow:hidden; border:1px solid var(--outline) }
+    .strength > span{ display:block; height:100%; width:0%; transition: width .25s ease, background .25s ease }
+
+    .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; padding:3px 6px; border-radius:6px; background: rgba(255,255,255,.08); border:1px solid var(--outline); color: var(--muted) }
+
+    .tabbar{ display:flex; gap:8px; background: rgba(255,255,255,.06); border:1px solid var(--outline); border-radius:12px; padding:6px }
+    .tabbar button{ flex:1; padding:10px 12px; border-radius:8px; background: transparent; color: var(--muted); border:none; cursor:pointer; font-weight:700 }
+    .tabbar button.active{ background: linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.08)); color: var(--text) }
+
+    .hint{ font-size:12px; color:var(--muted) }
+    footer{ text-align:center; margin-top:18px; color:var(--muted); font-size:12px }
+    a{ color:#a9c5ff }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>FortifyPass</h1>
+      <div class="subtitle">Beautiful, offline, client‑side password & passphrase generator</div>
+    </header>
+
+    <div class="card grid grid-2" id="app">
+      <!-- Left: Output & Actions -->
+      <section class="grid" style="align-content:start">
+        <div>
+          <div class="section-title">Result</div>
+          <div class="output" id="outputBox">
+            <code id="output">Generate something strong ✨</code>
+            <div class="icon-btn">
+              <button class="btn flat" id="copyBtn" title="Copy">Copy</button>
+              <button class="btn" id="regenBtn" title="Regenerate">Refresh</button>
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <div class="strength grow" title="Estimated strength">
+              <span id="strengthBar"></span>
+            </div>
+            <span id="strengthLabel" class="chip">Strength — n/a</span>
+            <span id="entropyBits" class="chip">Entropy — 0 bits</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-title">What to generate?</div>
+          <div class="tabbar">
+            <button class="active" data-tab="password">Password</button>
+            <button data-tab="passphrase">Passphrase</button>
+            <button data-tab="pin">PIN</button>
+          </div>
+        </div>
+
+        <div class="row">
+          <button class="btn" id="generateBtn">Generate</button>
+          <button class="btn ghost" id="clearBtn">Clear</button>
+          <span class="hint">Everything runs in your browser. Nothing is uploaded.</span>
+        </div>
+      </section>
+
+      <!-- Right: Controls -->
+      <section class="grid" id="controls">
+        <!-- PASSWORD CONTROLS -->
+        <div class="section" data-panel="password">
+          <div class="section-title">Password options</div>
+
+          <div class="field">
+            <div class="label">Length</div>
+            <input class="range" id="pwLength" type="range" min="8" max="64" value="16" />
+            <input class="num" id="pwLengthNum" type="number" min="8" max="64" value="16" />
+          </div>
+
+          <label class="switch"><input id="lowercase" type="checkbox" checked/><span class="track"><span class="thumb"></span></span><span>Lowercase (a–z)</span></label>
+          <label class="switch"><input id="uppercase" type="checkbox" checked/><span class="track"><span class="thumb"></span></span><span>Uppercase (A–Z)</span></label>
+          <label class="switch"><input id="numbers" type="checkbox" checked/><span class="track"><span class="thumb"></span></span><span>Numbers (0–9)</span></label>
+
+          <div class="section-title" style="margin-top:10px">Special character sets</div>
+          <label class="switch"><input id="sp1" type="checkbox" checked/><span class="track"><span class="thumb"></span></span><span>Set 1 — URL/HTTP‑safe (! @ # $ % ^ * _ - + =)</span></label>
+          <label class="switch"><input id="sp2" type="checkbox" /><span class="track"><span class="thumb"></span></span><span>Set 2 — Includes visually similar (| & l I 0 O)</span></label>
+          <label class="switch"><input id="sp3" type="checkbox" /><span class="track"><span class="thumb"></span></span><span>Set 3 — Full special charset (~ ` ( ) [ ] { } ; : ' " , . < > ? / \)</span></label>
+          <label class="switch"><input id="sp4" type="checkbox" /><span class="track"><span class="thumb"></span></span><span>Set 4 — Space allowed</span></label>
+
+          <div class="row" style="margin-top:8px">
+            <label class="switch"><input id="avoidSimilar" type="checkbox" /><span class="track"><span class="thumb"></span></span><span>Avoid similar (1 l I 0 O)</span></label>
+          </div>
+        </div>
+
+        <!-- PASSPHRASE CONTROLS -->
+        <div class="section" data-panel="passphrase" style="display:none">
+          <div class="section-title">Passphrase options</div>
+
+          <div class="field">
+            <div class="label">Words</div>
+            <input class="range" id="ppWords" type="range" min="3" max="10" value="5" />
+            <input class="num" id="ppWordsNum" type="number" min="3" max="10" value="5" />
+          </div>
+
+          <div class="field">
+            <div class="label">Separator</div>
+            <select class="num" id="ppSep">
+              <option value="-">- (hyphen)</option>
+              <option value="_">_ (underscore)</option>
+              <option value=".">. (dot)</option>
+              <option value="~">~ (tilde)</option>
+              <option value="random">random from sets</option>
+              <option value="number">random number</option>
+            </select>
+            <span class="hint">Words are picked client‑side from a built‑in list. You can also supply words.txt.</span>
+          </div>
+
+          <label class="switch"><input id="ppCapitalize" type="checkbox" checked/><span class="track"><span class="thumb"></span></span><span>Capitalize each word</span></label>
+          <label class="switch"><input id="ppIncludeNumber" type="checkbox" /><span class="track"><span class="thumb"></span></span><span>Append random number</span></label>
+        </div>
+
+        <!-- PIN CONTROLS -->
+        <div class="section" data-panel="pin" style="display:none">
+          <div class="section-title">PIN options</div>
+          <div class="field">
+            <div class="label">Length</div>
+            <input class="range" id="pinLength" type="range" min="4" max="12" value="6" />
+            <input class="num" id="pinLengthNum" type="number" min="4" max="12" value="6" />
+          </div>
+          <label class="switch"><input id="pinNoSeq" type="checkbox" checked/><span class="track"><span class="thumb"></span></span><span>Avoid sequences (e.g., 1234)</span></label>
+          <label class="switch"><input id="pinNoRepeat" type="checkbox" checked/><span class="track"><span class="thumb"></span></span><span>Avoid repeats (e.g., 1111)</span></label>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      Built with ❤️ — client‑side only. Tip: use a manager to store passwords safely.
+    </footer>
+  </div>
+
+  <script>
+    // ---------- Character Sets ----------
+    const SETS = {
+      lower: 'abcdefghijklmnopqrstuvwxyz',
+      upper: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+      num:   '0123456789',
+      sp1:   '!@#$%^*_+-=', // URL/HTTP safe-ish
+      sp2:   '|&lI0O',      // visually similar / misleading
+      sp3:   "~`()[]{};:'\",.<>?/\\", // full set
+      sp4:   ' ',
+    };
+
+    const SIMILAR = new Set(['1','l','I','0','O']);
+
+    // ---------- Utility: Crypto‑strong RNG ----------
+    function cryptoRandomInt(max){
+      // returns 0..max-1
+      const arr = new Uint32Array(1);
+      let x; const limit = Math.floor(0x100000000 / max) * max;
+      do {
+        crypto.getRandomValues(arr);
+        x = arr[0];
+      } while (x >= limit);
+      return x % max;
+    }
+
+    function pick(arr){ return arr[cryptoRandomInt(arr.length)]; }
+
+    // ---------- Entropy helpers ----------
+    function log2(x){ return Math.log(x) / Math.log(2); }
+    function estimateStrengthBits(poolSize, length){
+      if (!poolSize || !length) return 0;
+      return Math.round(length * log2(poolSize));
+    }
+
+    function qualityLabel(bits){
+      if (bits < 50) return {label:'Weak', color:'var(--danger)'};
+      if (bits < 80) return {label:'Medium', color:'var(--warn)'};
+      return {label:'Strong', color:'var(--success)'};
+    }
+
+    // ---------- DOM refs ----------
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+
+    const output = $('#output');
+    const strengthBar = $('#strengthBar');
+    const strengthLabel = $('#strengthLabel');
+    const entropyBits = $('#entropyBits');
+
+    // inputs
+    const pwLength = $('#pwLength');
+    const pwLengthNum = $('#pwLengthNum');
+    const lowercase = $('#lowercase');
+    const uppercase = $('#uppercase');
+    const numbers = $('#numbers');
+    const sp1 = $('#sp1');
+    const sp2 = $('#sp2');
+    const sp3 = $('#sp3');
+    const sp4 = $('#sp4');
+    const avoidSimilar = $('#avoidSimilar');
+
+    const ppWords = $('#ppWords');
+    const ppWordsNum = $('#ppWordsNum');
+    const ppSep = $('#ppSep');
+    const ppCapitalize = $('#ppCapitalize');
+    const ppIncludeNumber = $('#ppIncludeNumber');
+
+    const pinLength = $('#pinLength');
+    const pinLengthNum = $('#pinLengthNum');
+    const pinNoSeq = $('#pinNoSeq');
+    const pinNoRepeat = $('#pinNoRepeat');
+
+    const modeTabs = $$('.tabbar button');
+
+    // ---------- Sync sliders ↔ numbers ----------
+    function bindPair(range, num){
+      range.addEventListener('input', ()=> num.value = range.value);
+      num.addEventListener('input', ()=> range.value = clamp(num.value, +range.min, +range.max));
+    }
+    function clamp(v,min,max){ v = parseInt(v||min,10); return Math.max(min, Math.min(max, v)); }
+
+    bindPair(pwLength, pwLengthNum);
+    bindPair(ppWords, ppWordsNum);
+    bindPair(pinLength, pinLengthNum);
+
+    // ---------- Tab handling ----------
+    modeTabs.forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        modeTabs.forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.dataset.tab;
+        $$('.section[data-panel]').forEach(sec=>{
+          sec.style.display = (sec.dataset.panel === tab) ? '' : 'none';
+        });
+        // refresh strength display for new mode
+        updateStrengthPreview();
+      });
+    });
+
+    // ---------- Password Generation ----------
+    function buildPool(){
+      let pool = '';
+      let groups = [];
+      if (lowercase.checked){ pool += SETS.lower; groups.push(SETS.lower); }
+      if (uppercase.checked){ pool += SETS.upper; groups.push(SETS.upper); }
+      if (numbers.checked){ pool += SETS.num; groups.push(SETS.num); }
+      if (sp1.checked){ pool += SETS.sp1; groups.push(SETS.sp1); }
+      if (sp2.checked){ pool += SETS.sp2; groups.push(SETS.sp2); }
+      if (sp3.checked){ pool += SETS.sp3; groups.push(SETS.sp3); }
+      if (sp4.checked){ pool += SETS.sp4; groups.push(SETS.sp4); }
+
+      // remove similar if requested
+      if (avoidSimilar.checked){
+        pool = [...pool].filter(ch=>!SIMILAR.has(ch)).join('');
+        groups = groups.map(g=>[...g].filter(ch=>!SIMILAR.has(ch)).join(''));
+      }
+      return { pool, groups };
+    }
+
+    function generatePassword(){
+      const { pool, groups } = buildPool();
+      const len = clamp(pwLength.value, +pwLength.min, +pwLength.max);
+      if (!pool.length){ return '⚠️ Select at least one character set'; }
+
+      // Ensure at least 1 char from each selected group, then fill the rest
+      const req = groups.map(g=> g[cryptoRandomInt(g.length)]);
+      let remaining = len - req.length;
+      const poolArr = [...pool];
+      const out = [...req];
+      while (remaining-- > 0){ out.push(poolArr[cryptoRandomInt(poolArr.length)]); }
+      // Shuffle (Fisher–Yates)
+      for (let i = out.length - 1; i > 0; i--){
+        const j = cryptoRandomInt(i+1);
+        [out[i], out[j]] = [out[j], out[i]];
+      }
+      return out.join('');
+    }
+
+    // ---------- Passphrase Generation ----------
+    // Built‑in compact wordlist (~512 common words) — replace with words.txt if desired
+    const BUILTIN_WORDS = (
+      'able acid after agent agree ahead alpha amber ample angel angry apart apply arena armed aroma array arrow asset audio aunt aware '+
+      'bacon badge basic beach beard begin berry beyond bike birth black blade blast blend block bloom blush board boast bonus booth '+
+      'brain brave bread brick brief bright bring broad brush buddy budget build bulk burst busy buyer cabin cable cactus calm camel '+
+      'candy canon cargo carve cause cedar chain chair chalk charm cheap cheek chest chief child climb clock cloud coach coast cocoa '+
+      'color comic coral craft crane crash cream creek crisp crowd crown crush crystal curry cyber dance dairy dawn dealer debug deer '+
+      'dental depth desert design detail device diary dice diesel digit dirty donor dragon drama dream drill drink drive dusk eager early '+
+      'earth easel ebony edge edit elder elect elite empty enjoy enter equal error ethic exotic expand extra fabric faith fancy fatal '+
+      'feast feed fiber field fiery fifth fifty final first flame flash fleet flora fluid flute focus force forest forge forgot fossil '+
+      'foster frame fresh frost fruit fuzzy gaint gauge gave ghost giant glory glove goat going grape graph grass great green grid grill '+
+      'group guard guess guest guide habit happy harsh haven heart heavy hedge hello hobby honor honey horse hotel house hover human '+
+      'humor ideal image index inner input ivory jewel joint jolly judge juice jump keen keep kettle kick kidney kind king kite kitten '+
+      'label labor lace ladder lady large laser later laugh lava layer leader leaf learn legal lemon level light limit linen lion liquid '+
+      'logic loyal lucky lyric magic major maple march marry match metal meter micro might mimic miner mint minus mirror mixed model '+
+      'money month moon moral motor mouse movie music naive narrow navy near nectar nerve never noble noise north novel nurse oak obey '+
+      'object ocean olive onion open opera optic orbit order organ other outer oxide oxygen oyster pace pack paddle paint panel paper '+
+      'party pasta patch path pause peace pearl pedal pencil pepper period permit petal phone photo piano piece pilot pinch pixel pizza '+
+      'plain planet plaza plead pledge plenty plum plus pocket polar policy pollen poet point polar pond pony pool power praise prime '+
+      'print prior prism prize proof proud prune pulse punch pupil puppy purple pupil purse puzzle quartz queen query quest quick quiet '+
+      'ranch rapid ratio razor ready rebel record relax rely reply reset result retail retro ridge river robot rock rocky roman rookie '+
+      'root rough round route royal ruby rugby rural rust rider saddle safely salad salmon sample sand sauce scale scene scope score scout '+
+      'scrap seed sense seven shade shadow share sharp sheep sheet shelf shell shift shine ship shock shore short shout shown shrub '+
+      'sight silk silver simple since skill skirt skull slate sleep slice slide slope small smart smile smoke snack snake snowy solar '+
+      'solid solve sound soup space spark speak speed spell spice spike spiral split spoil spoon sport spray spring spy squad stair stake '+
+      'stand star static steam steel steep stem stick still stone story stove storm strap straw street strike string strong studio '+
+      'style sugar sunny super sweet swift table tackle talent target taste teach team tech tempo tend tent test text thank theme thick '+
+      'thief thing think third thorn those three thunder ticket tiny toast today token tomato tone topic torch total tower trace track '+
+      'trade train trait trash treat trend trial tribe trick trout truck truly trump trunk trust truth tulip tuna twice twist uncle '+
+      'urban urge usage use usual valid value vapor vault velvet venue verse video view violet violin viral virus visit vital vivid vocal '+
+      'voice void voter wagon waist water weaver wedge whale wheat wheel while white wide widow width wind wine wing wink winter wired '+
+      'wisdom witch wolf woman world worry worth would woven wrist yacht yearn yellow yield young youth zebra zero zest zinc zone zoom'
+    ).split(/\s+/);
+
+    async function getWordList(){
+      // Try to fetch words.txt (newline separated). If not present, use built‑in list.
+      try {
+        const res = await fetch('words.txt');
+        if (res.ok){
+          const txt = await res.text();
+          const arr = txt.split(/\r?\n/).map(w=>w.trim()).filter(Boolean);
+          if (arr.length > 100) return arr; // sanity threshold
+        }
+      } catch {}
+      return BUILTIN_WORDS;
+    }
+
+    async function generatePassphrase(){
+      const wordsCount = clamp(ppWords.value, +ppWords.min, +ppWords.max);
+      const list = await getWordList();
+      const sepMode = ppSep.value;
+
+      // Build separator pool
+      let sepPool = '';
+      if (sepMode === 'random'){
+        const { pool } = buildPool();
+        // from selected sets, but filter to non‑alphanumeric for separators
+        sepPool = [...pool].filter(ch => /[^a-zA-Z0-9]/.test(ch)).join('');
+        if (!sepPool) sepPool = '-_~.'; // fallback
+      }
+
+      const words = [];
+      for (let i=0; i<wordsCount; i++){
+        let w = list[cryptoRandomInt(list.length)];
+        if (ppCapitalize.checked) w = w.charAt(0).toUpperCase() + w.slice(1);
+        words.push(w);
+      }
+
+      let sep = '-';
+      if (sepMode === 'number'){
+        // Random 1–4 digit number between words
+        const randNum = String(cryptoRandomInt(9000)+1000); // 1000..9999
+        sep = randNum;
+      } else if (sepMode === 'random'){
+        sep = sepPool[cryptoRandomInt(sepPool.length)];
+      } else {
+        sep = sepMode; // chosen fixed separator
+      }
+
+      let phrase = words.join(sep);
+      if (ppIncludeNumber.checked){ phrase += String(cryptoRandomInt(900)+100); }
+      return phrase;
+    }
+
+    // ---------- PIN Generation ----------
+    function generatePIN(){
+      const len = clamp(pinLength.value, +pinLength.min, +pinLength.max);
+      let out = '';
+      let last = null;
+      while (out.length < len){
+        const d = cryptoRandomInt(10);
+        const next = String(d);
+        if (pinNoRepeat.checked && next === last) continue;
+        // avoid simple ascending sequences like 1234, 2345 ... for consecutive positions
+        if (pinNoSeq.checked && last !== null){
+          const lastNum = +last;
+          if ((d === (lastNum+1)%10) || (d === (lastNum+9)%10)) { // also avoid descending immediate neighbor
+            continue;
+          }
+        }
+        out += next; last = next;
+      }
+      return out;
+    }
+
+    // ---------- Strength & UI ----------
+    function updateStrengthPreview(text){
+      const activeTab = document.querySelector('.tabbar button.active').dataset.tab;
+      let bits = 0;
+      if (activeTab === 'password'){
+        const { pool } = buildPool();
+        const len = clamp(pwLength.value, +pwLength.min, +pwLength.max);
+        bits = estimateStrengthBits(pool.length, len);
+      } else if (activeTab === 'passphrase'){
+        const words = clamp(ppWords.value, +ppWords.min, +ppWords.max);
+        // estimate entropy: log2(wordlist^words) + small bonus if sep is random/number
+        const listSize = 4096; // assume ~4096 typical list size; built‑in smaller but you can provide larger
+        bits = Math.round(words * log2(listSize));
+        if (ppSep.value === 'random') bits += 3;
+        if (ppSep.value === 'number') bits += 6;
+      } else {
+        const len = clamp(pinLength.value, +pinLength.min, +pinLength.max);
+        // naive PIN entropy ~ log2(10^len) with reductions for constraints
+        bits = estimateStrengthBits(10, len);
+        if (pinNoSeq.checked) bits += 1;
+        if (pinNoRepeat.checked) bits += 1;
+      }
+      const { label, color } = qualityLabel(bits);
+      strengthBar.style.width = Math.min(100, Math.round(bits/1.2)) + '%';
+      strengthBar.style.background = color;
+      strengthLabel.textContent = `Strength — ${label}`;
+      entropyBits.textContent = `Entropy — ${bits} bits`;
+      strengthLabel.style.borderColor = 'transparent';
+    }
+
+    // ---------- Actions ----------
+    async function generate(){
+      const tab = document.querySelector('.tabbar button.active').dataset.tab;
+      let result = '';
+      if (tab === 'password') result = generatePassword();
+      if (tab === 'passphrase') result = await generatePassphrase();
+      if (tab === 'pin') result = generatePIN();
+      output.textContent = result;
+      updateStrengthPreview(result);
+    }
+
+    function clearOut(){ output.textContent = '…'; updateStrengthPreview(''); }
+
+    function copy(){
+      const txt = output.textContent || '';
+      if (!txt || txt === '…') return;
+      navigator.clipboard.writeText(txt).then(()=>{
+        const btn = document.getElementById('copyBtn');
+        const prev = btn.textContent; btn.textContent = 'Copied! ✅';
+        setTimeout(()=> btn.textContent = prev, 1200);
+      });
+    }
+
+    // ---------- Event wiring ----------
+    $('#generateBtn').addEventListener('click', generate);
+    $('#regenBtn').addEventListener('click', generate);
+    $('#clearBtn').addEventListener('click', clearOut);
+    $('#copyBtn').addEventListener('click', copy);
+
+    // Update strength when options change
+    [pwLength, pwLengthNum, lowercase, uppercase, numbers, sp1, sp2, sp3, sp4, avoidSimilar,
+     ppWords, ppWordsNum, ppSep, ppCapitalize, ppIncludeNumber,
+     pinLength, pinLengthNum, pinNoSeq, pinNoRepeat
+    ].forEach(el => el.addEventListener('input', ()=> updateStrengthPreview()));
+
+    // Initial paint
+    updateStrengthPreview();
+  </script>
+</body>
+</html>
